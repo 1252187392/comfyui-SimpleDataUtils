@@ -6,7 +6,10 @@ import random
 import cv2
 import torch
 import numpy as np
+from tqdm import tqdm
+
 from .lib.model import init_pipe, generate_image
+from .lib.utils import imagelist2tensor, tensor2image
 
 
 def cropImage(images):
@@ -18,6 +21,7 @@ def cropImage(images):
         start_x, start_y = crop[0] // 2, crop[1] // 2
         new_images.append(image[start_y: start_y + s, start_x: start_x + s, :])
     return new_images
+
 
 class ReadImageDir:
     '''
@@ -53,6 +57,30 @@ class ReadImageDir:
         #images = np.array(images, dtype=np.float32)
         #images = torch.from_numpy(images).div_(255)
         return (images, )
+
+
+class MergeImages:
+    FUNCTION = "mergeImages"
+    RETURN_NAMES = ("images", )
+    RETURN_TYPES = ("IMAGE",)
+    CATEGORY = 'SimpleDataset'
+    OUTPUT_NODE = False # 声明这个节点是叶子节点
+
+    # 定义输入
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {'required': {
+            'list_image1': ("IMAGE",),
+            'list_image2': ("IMAGE",)
+        }}
+
+
+    def mergeImages(self, list_image1, list_image2):
+        if isinstance(list_image1, list):
+            res = list_image1 + list_image2
+        elif isinstance(list_image1, torch.Tensor):
+            res = torch.concatenate([list_image1, list_image2], dim=0)
+        return (res, )
 
 
 class GenFileNames:
@@ -93,8 +121,7 @@ class GenFileNames:
             file.write(text)
             file.close()
         for image, image_name in zip(list_image, image_names):
-            image = 255. * image.cpu().numpy()
-            image = np.clip(image, 0, 255).astype(np.uint8)[:,:,::-1]
+            image = tensor2image(image)[:,:,::-1]
             cv2.imwrite(os.path.join(save_dir, image_name), image)
         for i, text in enumerate(texts):
             print(i, text)
@@ -102,8 +129,8 @@ class GenFileNames:
         return (image_names, text_names, save_dir, )
 
 
-class GenImages:
-    FUNCTION = "genImages"
+class GenImagesFromDir:
+    FUNCTION = "genImagesDir"
     RETURN_NAMES = ("save_dir", )
     RETURN_TYPES = ("STRING", )
     CATEGORY = 'SimpleDataset'
@@ -119,7 +146,7 @@ class GenImages:
         }}
 
 
-    def genImages(self, data_dir, num, steps):
+    def genImagesDir(self, data_dir, num, steps):
         '''
         每个txt文件生成num张图
         data_dir: 读取该目录下所有.txt文件
@@ -168,30 +195,79 @@ class CenterCrop:
     def cropImage(self, images, target_size):
         new_images = []
         for image in images:
-            image = 255. * image.cpu().numpy()
-            image = np.clip(image, 0, 255).astype(np.uint8)
+            image = tensor2image(image)
             h, w, c = image.shape
             s = min(h, w)
             crop = (w - s, h - s)
             start_x, start_y = crop[0] // 2, crop[1] // 2
             image = image[start_y: start_y + s,start_x: start_x+s, :]
-            image = cv2.resize(image, (target_size, target_size))
             new_images.append(image)
-        new_images = np.array(new_images, dtype=np.float32)
-        new_images = torch.from_numpy(new_images).div_(255)
+        new_images = imagelist2tensor(new_images, (target_size, target_size))
         return (new_images, )
 
 
-NODE_CLASS_MAPPINGS = {
-    "GenFileNames": GenFileNames,
-    "ReadImageDir": ReadImageDir,
-    "GenImages": GenImages,
-    "CenterCrop": CenterCrop,
-}
 
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "GenFileNames": "GenFileNames",
-    "ReadImageDir": "ReadImageDir",
-    "GenImages": "GenImages",
-    "CenterCrop": "CenterCrop"
-}
+def save_frames(path, save_dir, count=3, step=10, start_step=12):
+    '''
+    count  # 输出多少帧 越大越慢
+    step  # 单位为秒， 每step秒输出一帧, 越大越慢
+    start_step  # 第几秒开始输出，即跳过片头
+    '''
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    cap = cv2.VideoCapture(path)
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    frame_num = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    print('frame_num', frame_num)
+    print('fps', fps)
+
+    cap.set(cv2.CAP_PROP_POS_FRAMES, fps * start_step)
+    for i in tqdm(range(fps * start_step, frame_num)):
+        ret, frame = cap.read()
+        if not ret:
+            continue
+        if i % fps != 0:
+            continue
+        t = i // fps
+        if t % step == 0:
+            cv2.imwrite(os.path.join(save_dir, str(count) + '.jpg'), frame)
+            count -= 1
+        if count <= 0:
+            break
+    cap.release()
+    return save_dir
+
+'''
+path = 'D:\\Downloads\\千与千寻.2001.4KHD1080P.日语中字.mp4'
+path = 'I:\\datasets\\新海诚.mp4'
+save_dir = 'I:\\datasets\\xinhaicheng'
+path = 'I:\\datasets\\新海诚混剪壁纸.mp4'
+save_dir = 'I:\\datasets\\xinhaicheng2'
+save_frames(path, save_dir, 150, 3, 2)
+'''
+
+class Video2Frames:
+    '''
+    视频文件-> 图片
+    '''
+    FUNCTION = "video2Frames"
+    RETURN_NAMES = ("save_dir",)
+    RETURN_TYPES = ("STRING",)
+    CATEGORY = 'SimpleDataset'
+    OUTPUT_NODE = True  # 声明这个节点是叶子节点
+
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {'required': {
+            'video_path': ("STRING", {"default": "video.mp4"}),
+            'save_dir': ("STRING", {"default": "output dir"}),
+            'count': ("INT", {"default": 30}), # 输出多少帧
+            'step': ("INT", {"default": 30}), # 每step秒输出一帧
+            'start_step': ("INT", {"default": 0 }) # c从第几秒开始输出
+        }}
+
+
+    def video2Frames(self, video_path, save_dir, count, step, start_step):
+        save_frames(video_path, save_dir, count, step, start_step)
+        return (save_dir, )
