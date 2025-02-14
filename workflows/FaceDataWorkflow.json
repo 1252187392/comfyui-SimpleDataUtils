@@ -1,0 +1,316 @@
+{
+  "last_node_id": 11,
+  "last_link_id": 13,
+  "nodes": [
+    {
+      "id": 2,
+      "type": "CropFace",
+      "pos": [
+        551.984375,
+        -1043.7999267578125
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            11,
+            12,
+            13
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CropFace"
+      },
+      "widgets_values": [
+        640
+      ]
+    },
+    {
+      "id": 3,
+      "type": "ReadImageDir",
+      "pos": [
+        97.0244140625,
+        -1043.3968505859375
+      ],
+      "size": [
+        315,
+        58
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ReadImageDir"
+      },
+      "widgets_values": [
+        "I:\\\\datasets\\\\origin_person"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "GenImagesFromDir",
+      "pos": [
+        1715.197509765625,
+        -1041.380126953125
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "data_dir",
+          "type": "STRING",
+          "link": 9,
+          "widget": {
+            "name": "data_dir"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "save_dir",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GenImagesFromDir"
+      },
+      "widgets_values": [
+        "I://datasets//output",
+        1,
+        25
+      ]
+    },
+    {
+      "id": 8,
+      "type": "WD14Tagger|pysssss",
+      "pos": [
+        883.9281616210938,
+        -826.27685546875
+      ],
+      "size": [
+        315,
+        5970
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            7
+          ],
+          "slot_index": 0,
+          "shape": 6
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "WD14Tagger|pysssss"
+      },
+      "widgets_values": [
+        "wd-v1-4-moat-tagger-v2",
+        0.35,
+        0.85,
+        false,
+        false,
+        ""
+      ]
+    },
+    {
+      "id": 9,
+      "type": "GenFileNames",
+      "pos": [
+        1190.8961181640625,
+        -1083.958984375
+      ],
+      "size": [
+        315,
+        126
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "list_image",
+          "type": "IMAGE",
+          "link": 13
+        },
+        {
+          "name": "texts",
+          "type": "STRING",
+          "link": 7,
+          "widget": {
+            "name": "texts"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image_names",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 0
+        },
+        {
+          "name": "text_names",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "save_dir",
+          "type": "STRING",
+          "links": [
+            9
+          ],
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GenFileNames"
+      },
+      "widgets_values": [
+        "",
+        "image_",
+        "I://datasets//origin_person_cap"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "PreviewImage",
+      "pos": [
+        926.80126953125,
+        -1412.62451171875
+      ],
+      "size": [
+        210,
+        246
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 11
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    }
+  ],
+  "links": [
+    [
+      1,
+      3,
+      0,
+      2,
+      0,
+      "IMAGE"
+    ],
+    [
+      7,
+      8,
+      0,
+      9,
+      1,
+      "STRING"
+    ],
+    [
+      9,
+      9,
+      2,
+      11,
+      0,
+      "STRING"
+    ],
+    [
+      11,
+      2,
+      0,
+      7,
+      0,
+      "IMAGE"
+    ],
+    [
+      12,
+      2,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      13,
+      2,
+      0,
+      9,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.6830134553650711,
+      "offset": [
+        130.01094964917095,
+        1521.5631209285712
+      ]
+    },
+    "node_versions": {
+      "comfyui-wd14-tagger": "1.0.0",
+      "comfy-core": "v0.3.10"
+    },
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0
+  },
+  "version": 0.4
+}
